@@ -1,0 +1,2 @@
+Y:\CS550\Sample2022\Debug\Sample.exe
+D:\Sample2022\Debug\Sample.exe
