@@ -191,6 +191,7 @@ int		ShadowsOn;				// != 0 means to turn shadows on
 float	Time;					// used for animation, this has a value between 0. and 1.
 int		Xmouse, Ymouse;			// mouse values
 float	Xrot, Yrot;				// rotation angles in degrees
+GLuint WireHorseList;
 
 
 // function prototypes:
@@ -279,6 +280,7 @@ MulArray3(float factor, float a, float b, float c )
 //#include "loadobjfile.cpp"
 //#include "keytime.cpp"
 //#include "glslprogram.cpp"
+#include "CarouselHorse0.10.550.cpp"
 
 
 // main program:
@@ -343,6 +345,8 @@ Animate( )
 	// force a call to Display( ) next time it is convenient:
 
 	glutSetWindow( MainWindow );
+	glCallList(WireHorseList);
+
 	glutPostRedisplay( );
 }
 
@@ -357,7 +361,6 @@ Display( )
 
 	// set which window we want to do the graphics into:
 	glutSetWindow( MainWindow );
-
 	// erase the background:
 	glDrawBuffer( GL_BACK );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -446,6 +449,7 @@ Display( )
 	// draw the box object by calling up its display list:
 
 	glCallList( BoxList );
+	glCallList(WireHorseList);
 
 #ifdef DEMO_Z_FIGHTING
 	if( DepthFightingOn != 0 )
@@ -812,6 +816,7 @@ InitGraphics( )
 //  memory so that they can be played back efficiently at a later time
 //  with a call to glCallList( )
 
+
 void
 InitLists( )
 {
@@ -823,15 +828,47 @@ InitLists( )
 	float dz = BOXSIZE / 2.f;
 	glutSetWindow( MainWindow );
 
+
+	WireHorseList = glGenLists(1);
+
+	glNewList(WireHorseList, GL_COMPILE);
+	glPushMatrix();
+	glRotatef(0.0, 0., 1., 0.);
+	glTranslatef(0., -1.1f, 0.f);
+
+	glTranslatef(0.0, 0.0, 0.0);
+	glRotatef(360.f * Time, 0.0, 1.0, 0.0);
+	glTranslatef(2.0, 0.0, 0.0);
+	glRotatef(0.0, 1.0, 0.0, 0.0);
+	glColor3f(1.f, 1.f, 0.f);	// yellow
+	glBegin(GL_LINES);
+	for (int i = 0; i < HORSEnedges; i++)
+	{
+		struct point p0 = HORSEpoints[HORSEedges[i].p0];
+		struct point p1 = HORSEpoints[HORSEedges[i].p1];
+		glVertex3f(p0.x, p0.y, p0.z);
+		glVertex3f(p1.x, p1.y, p1.z);
+	}
+	glEnd();
+	glPopMatrix();
+
+	glEndList();
+
+
 	// create the object:
 
 	BoxList = glGenLists( 1 );
 	glNewList( BoxList, GL_COMPILE );
-
-		glBegin( GL_QUADS );
-
-			
-
+		
+		glBegin(GL_LINE_LOOP);
+		glColor3f(0, 1, 1);
+		for (int i = 0; i <= 20; i++) {
+			glVertex3f(
+				0.0 + (2 * cos(i * 2.0f * M_PI / 20)),
+				0.0,
+				0.0 + (2 * sin(i * 2.0f * M_PI / 20))
+			);
+		}
 		glEnd( );
 
 	glEndList( );

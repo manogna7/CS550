@@ -1,3 +1,5 @@
 ﻿  sample.cpp
+D:\CS550\Project #2\sample.cpp(869,9): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+D:\CS550\Project #2\sample.cpp(867,9): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
 sample.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/INCREMENTAL:NO' specification
   Sample.vcxproj -> D:\CS550\Project #2\Debug\Sample.exe
