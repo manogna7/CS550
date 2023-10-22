@@ -23,27 +23,8 @@
 #include "glut.h"
 
 
-//	This is a sample OpenGL / GLUT program
-//
-//	The objective is to draw a 3d object and change the color of the axes
-//		with a glut menu
-//
-//	The left mouse button does rotation
-//	The middle mouse button does scaling
-//	The user interface allows:
-//		1. The axes to be turned on and off
-//		2. The color of the axes to be changed
-//		3. Debugging to be turned on and off
-//		4. Depth cueing to be turned on and off
-//		5. The projection to be changed
-//		6. The transformations to be reset
-//		7. The program to quit
-//
-//	Author:			Joe Graphics
 
-// title of these windows:
-
-const char *WINDOWTITLE = "OpenGL / GLUT Sample -- Joe Graphics";
+const char *WINDOWTITLE = "Project #2 Manogna";
 const char *GLUITITLE   = "User Interface Window";
 
 // what the glui package defines as true and false:
@@ -94,6 +75,12 @@ enum Projections
 {
 	ORTHO,
 	PERSP
+};
+
+enum VIEWS
+{
+	INSIDE,
+	OUTSIDE
 };
 
 // which button:
@@ -191,7 +178,10 @@ int		ShadowsOn;				// != 0 means to turn shadows on
 float	Time;					// used for animation, this has a value between 0. and 1.
 int		Xmouse, Ymouse;			// mouse values
 float	Xrot, Yrot;				// rotation angles in degrees
-GLuint WireHorseList;
+int		NowView;					// INSIDE OR OUTSIDE
+GLuint HorseList;
+GLuint HorseList2;
+
 
 
 // function prototypes:
@@ -206,6 +196,7 @@ void	DoDepthMenu( int );
 void	DoDebugMenu( int );
 void	DoMainMenu( int );
 void	DoProjectMenu( int );
+void	DoView(int);
 void	DoRasterString( float, float, float, char * );
 void	DoStrokeString( float, float, float, float, char * );
 float	ElapsedSeconds( );
@@ -345,7 +336,7 @@ Animate( )
 	// force a call to Display( ) next time it is convenient:
 
 	glutSetWindow( MainWindow );
-	glCallList(WireHorseList);
+	glCallList(HorseList);
 
 	glutPostRedisplay( );
 }
@@ -392,7 +383,7 @@ Display( )
 
 	glMatrixMode( GL_PROJECTION );
 	glLoadIdentity( );
-	if( NowProjection == ORTHO )
+	if( NowProjection == ORTHO && NowView != INSIDE)
 		glOrtho( -2.f, 2.f,     -2.f, 2.f,     0.1f, 1000.f );
 	else
 		gluPerspective( 70.f, 1.f,	0.1f, 1000.f );
@@ -404,7 +395,13 @@ Display( )
 
 	// set the eye position, look-at position, and up-vector:
 
-	gluLookAt( 0.f, 0.f, 3.f,     0.f, 0.f, 0.f,     0.f, 1.f, 0.f );
+	if (NowView == INSIDE) {
+		gluLookAt(0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f, 0.f);
+	}
+	else 
+	{
+		gluLookAt(3.f, 3.f, 3.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f);
+	}
 
 	// rotate the scene:
 
@@ -449,7 +446,37 @@ Display( )
 	// draw the box object by calling up its display list:
 
 	glCallList( BoxList );
-	glCallList(WireHorseList);
+
+	float tilt = 0.0f;
+	float offsetY = 0.0f;
+
+	glPushMatrix();
+
+	tilt = sin(glutGet(GLUT_ELAPSED_TIME) * 0.002f) * 30.0;
+	offsetY = sin(glutGet(GLUT_ELAPSED_TIME) * 0.001f) * 0.5;
+
+		glTranslatef(0, offsetY, 0.f);
+		glRotatef(-360.f * Time, 0.0, 1.0, 0.0);
+		glTranslatef(2.0, 0.0, 0.0);
+		glRotatef(tilt, 1.0, 0.0, 0.0);
+
+		glCallList(HorseList);
+
+	glPopMatrix();
+
+	glPushMatrix();
+
+	tilt = sin(glutGet(GLUT_ELAPSED_TIME) * 0.002f) * 30.0;
+	offsetY = sin(glutGet(GLUT_ELAPSED_TIME) * 0.001f) * 0.5;
+
+	glTranslatef(0, offsetY, 0.f);
+	glRotatef(-360.f * Time, 0.0, 1.0, 0.0);
+	glTranslatef(-2.0, 0.0, 0.0);
+	glRotatef(tilt, 1.0, 0.0, 0.0);
+
+	glCallList(HorseList2);
+
+	glPopMatrix();
 
 #ifdef DEMO_Z_FIGHTING
 	if( DepthFightingOn != 0 )
@@ -601,6 +628,16 @@ DoProjectMenu( int id )
 	glutPostRedisplay( );
 }
 
+void
+DoView(int id)
+{
+	NowView = id;
+
+	glutSetWindow(MainWindow);
+	glutPostRedisplay();
+}
+
+
 
 // use glut to display a string of characters using a raster font:
 
@@ -688,8 +725,14 @@ InitMenus( )
 	glutAddMenuEntry( "On",   1 );
 
 	int projmenu = glutCreateMenu( DoProjectMenu );
-	glutAddMenuEntry( "Orthographic",  ORTHO );
+	if (NowView != INSIDE) {
+		glutAddMenuEntry("Orthographic", ORTHO);
+	}
 	glutAddMenuEntry( "Perspective",   PERSP );
+
+	int viewmenu = glutCreateMenu(DoView);
+	glutAddMenuEntry("Inside", INSIDE);
+	glutAddMenuEntry("Outside", OUTSIDE);
 
 	int mainmenu = glutCreateMenu( DoMainMenu );
 	glutAddSubMenu(   "Axes",          axesmenu);
@@ -705,6 +748,7 @@ InitMenus( )
 
 	glutAddSubMenu(   "Depth Cue",     depthcuemenu);
 	glutAddSubMenu(   "Projection",    projmenu );
+	glutAddSubMenu(	  "View",		   viewmenu);
 	glutAddMenuEntry( "Reset",         RESET );
 	glutAddSubMenu(   "Debug",         debugmenu);
 	glutAddMenuEntry( "Quit",          QUIT );
@@ -829,30 +873,81 @@ InitLists( )
 	glutSetWindow( MainWindow );
 
 
-	WireHorseList = glGenLists(1);
 
-	glNewList(WireHorseList, GL_COMPILE);
+	HorseList = glGenLists(1);
+	glNewList(HorseList, GL_COMPILE);
 	glPushMatrix();
-	glRotatef(0.0, 0., 1., 0.);
 	glTranslatef(0., -1.1f, 0.f);
-
-	glTranslatef(0.0, 0.0, 0.0);
-	glRotatef(360.f * Time, 0.0, 1.0, 0.0);
-	glTranslatef(2.0, 0.0, 0.0);
-	glRotatef(0.0, 1.0, 0.0, 0.0);
-	glColor3f(1.f, 1.f, 0.f);	// yellow
-	glBegin(GL_LINES);
-	for (int i = 0; i < HORSEnedges; i++)
+	glBegin(GL_TRIANGLES);
+	for (int i = 0; i < HORSEntris; i++)
 	{
-		struct point p0 = HORSEpoints[HORSEedges[i].p0];
-		struct point p1 = HORSEpoints[HORSEedges[i].p1];
+		struct point p0 = HORSEpoints[HORSEtris[i].p0];
+		struct point p1 = HORSEpoints[HORSEtris[i].p1];
+		struct point p2 = HORSEpoints[HORSEtris[i].p2];
+
+		// fake "lighting" from above:
+
+		float p01[3], p02[3], n[3];
+		p01[0] = p1.x - p0.x;
+		p01[1] = p1.y - p0.y;
+		p01[2] = p1.z - p0.z;
+		p02[0] = p2.x - p0.x;
+		p02[1] = p2.y - p0.y;
+		p02[2] = p2.z - p0.z;
+		Cross(p01, p02, n);
+		Unit(n, n);
+		n[1] = (float)fabs(n[1]);
+		// simulating a glColor3f( 1., 1., 0. ) = yellow:
+		glColor3f(0.f * n[1], 1.f * n[1], 1.f * n[1]);
+
 		glVertex3f(p0.x, p0.y, p0.z);
 		glVertex3f(p1.x, p1.y, p1.z);
+		glVertex3f(p2.x, p2.y, p2.z);
 	}
 	glEnd();
 	glPopMatrix();
-
 	glEndList();
+
+
+
+	HorseList2 = glGenLists(1);
+	glNewList(HorseList2, GL_COMPILE);
+	glPushMatrix();
+	glRotatef(180.f, 0., 1., 0.);
+	glTranslatef(0., -1.1f, 0.f);
+
+	glBegin(GL_TRIANGLES);
+	for (int i = 0; i < HORSEntris; i++)
+	{
+		struct point p0 = HORSEpoints[HORSEtris[i].p0];
+		struct point p1 = HORSEpoints[HORSEtris[i].p1];
+		struct point p2 = HORSEpoints[HORSEtris[i].p2];
+
+		// fake "lighting" from above:
+
+		float p01[3], p02[3], n[3];
+		p01[0] = p1.x - p0.x;
+		p01[1] = p1.y - p0.y;
+		p01[2] = p1.z - p0.z;
+		p02[0] = p2.x - p0.x;
+		p02[1] = p2.y - p0.y;
+		p02[2] = p2.z - p0.z;
+		Cross(p01, p02, n);
+		Unit(n, n);
+		n[1] = (float)fabs(n[1]);
+		// simulating a glColor3f( 1., 1., 0. ) = yellow:
+		glColor3f(0.f * n[1], 1.f * n[1], 1.f * n[1]);
+
+		glVertex3f(p0.x, p0.y, p0.z);
+		glVertex3f(p1.x, p1.y, p1.z);
+		glVertex3f(p2.x, p2.y, p2.z);
+	}
+	glEnd();
+	glPopMatrix();
+	glEndList();
+
+
+
 
 
 	// create the object:
@@ -864,9 +959,9 @@ InitLists( )
 		glColor3f(0, 1, 1);
 		for (int i = 0; i <= 20; i++) {
 			glVertex3f(
-				0.0 + (2 * cos(i * 2.0f * M_PI / 20)),
-				0.0,
-				0.0 + (2 * sin(i * 2.0f * M_PI / 20))
+				0.0f + (2 * cos(i * 2.0f * M_PI / 20)),
+				0.0f,
+				0.0f + (2 * sin(i * 2.0f * M_PI / 20))
 			);
 		}
 		glEnd( );
@@ -910,6 +1005,16 @@ Keyboard( unsigned char c, int x, int y )
 		case ESCAPE:
 			DoMainMenu( QUIT );	// will not return here
 			break;				// happy compiler
+
+		case 'i':
+		case 'I':
+			NowView = INSIDE;
+			break;
+
+		case 'd':
+		case 'D':
+			NowView = OUTSIDE;
+			break;
 
 		default:
 			fprintf( stderr, "Don't know what to do with keyboard hit: '%c' (0x%0x)\n", c, c );
@@ -1034,6 +1139,7 @@ Reset( )
 	NowColor = YELLOW;
 	NowProjection = PERSP;
 	Xrot = Yrot = 0.;
+	NowView = OUTSIDE;
 }
 
 

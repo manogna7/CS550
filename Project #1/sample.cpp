@@ -11,7 +11,6 @@
 #define F_PI_2		((float)(F_PI/2.f))
 #endif
 
-
 #ifdef WIN32
 #include <windows.h>
 #pragma warning(disable:4996)
